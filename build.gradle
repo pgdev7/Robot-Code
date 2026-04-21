@@ -4,69 +4,98 @@ plugins {
     id "edu.wpi.first.GradleRIO" version "2026.2.1"
 }
 
-// Configure native components
-nativeUtils {
-    exportHeaders {
-        srcDir 'src/main/include'
-    }
-}
-
-// Configure WPILib
-wpi {
-    cpp {
-        enableMultiProjectFlatLayout = true
-    }
-}
-
-// Define deploy targets
+// Define my targets (RoboRIO) and artifacts (deployable files)
+// This is added by GradleRIO's backing project DeployUtils.
 deploy {
     targets {
         roborio(getTargetTypeClass('RoboRIO')) {
+            // Team number is loaded either from the .wpilib/wpilib_preferences.json
+            // or from command line. If not found an exception will be thrown.
+            // You can use getTeamOrDefault(team) instead of getTeamNumber if you
+            // want to store a team number in this file.
             team = project.frc.getTeamNumber()
             debug = project.frc.getDebugOrDefault(false)
 
             artifacts {
-                frcNative(getArtifactTypeClass('FRCNativeArtifact')) {
-                    component 'main'
-                    targetPlatform = 'roborio'
+                // First part is artifact name, 2nd is artifact type
+                // getTargetTypeClass is a shortcut to get the class type using a string
+
+                frcCpp(getArtifactTypeClass('FRCNativeArtifact')) {
                 }
 
+                // Static files artifact
                 frcStaticFileDeploy(getArtifactTypeClass('FileTreeArtifact')) {
                     files = project.fileTree('src/main/deploy')
                     directory = '/home/lvuser/deploy'
-                    deleteOldFiles = false
+                    deleteOldFiles = false // Change to true to delete files on roboRIO that no
+                                           // longer exist in deploy directory of this project
                 }
             }
         }
     }
 }
 
-// Configure components
-components {
-    main(NativeExecutableSpec) {
-        targetPlatform wpi.platforms.roborio
-        targetPlatform wpi.platforms.linuxx86-64
-        targetPlatform wpi.platforms.windowsx86-64
-        targetPlatform wpi.platforms.osxuniversal
+def deployArtifact = deploy.targets.roborio.artifacts.frcCpp
 
-        source {
-            srcDir 'src/main/cpp'
-            include '**/*.cpp'
+// Set this to true to enable desktop support.
+def includeDesktopSupport = true
+
+// Set to true to run simulation in debug mode
+wpi.cpp.debugSimulation = false
+
+// Default enable simgui
+wpi.sim.addGui().defaultEnabled = true
+// Enable DS but not by default
+wpi.sim.addDriverstation()
+
+model {
+    components {
+        frcUserProgram(NativeExecutableSpec) {
+            targetPlatform wpi.platforms.roborio
+            if (includeDesktopSupport) {
+                targetPlatform wpi.platforms.desktop
+            }
+
+            sources.cpp {
+                source {
+                    srcDir 'src/main/cpp'
+                    include '**/*.cpp', '**/*.cc'
+                }
+                exportedHeaders {
+                    srcDir 'src/main/include'
+                }
+            }
+
+            // Set deploy task to deploy this component
+            deployArtifact.component = it
+
+            // Enable run tasks for this component
+            wpi.cpp.enableExternalTasks(it)
+
+            // Enable simulation for this component
+            wpi.sim.enable(it)
+            // Defining my dependencies. In this case, WPILib (+ friends), and vendor libraries.
+            wpi.cpp.vendor.cpp(it)
+            wpi.cpp.deps.wpilib(it)
         }
-
-        exportedHeaders {
-            srcDir 'src/main/include'
-        }
-
-        // WPILib
-        useLibrary(it, "wpilib", "frc", "wpi", "ntcore", "cscore", "cameraserver", "wpilibNewCommands")
-
-        // Vendor libraries
-        useLibrary(it, "pathplannerlib-cpp", "photonlib-cpp", "URCL-cpp", "REVLib-cpp", "CTRE_Phoenix6_WPI")
     }
-}
+    testSuites {
+        frcUserProgramTest(GoogleTestTestSuiteSpec) {
+            testing $.components.frcUserProgram
 
-// Configure test task
-tasks.withType(Test) {
-    useGoogleTest()
+            sources.cpp {
+                source {
+                    srcDir 'src/test/cpp'
+                    include '**/*.cpp'
+                }
+            }
+
+            // Enable run tasks for this component
+            wpi.cpp.enableExternalTasks(it)
+
+            wpi.cpp.vendor.cpp(it)
+            wpi.cpp.deps.wpilib(it)
+            wpi.cpp.deps.googleTest(it)
+        }
+    }
 }

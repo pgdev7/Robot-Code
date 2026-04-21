@@ -1,68 +1,85 @@
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
+
 #include "Robot.h"
-#include "Constants.h"
-#include <frc/smartdashboard/SmartDashboard.h>
-#include <frc/DriverStation.h>
-#include <frc/RobotController.h>
+
 #include <frc2/command/CommandScheduler.h>
-#include <iostream>
-#include <cstdlib>
 
-Robot::Robot()
-    : m_batteryFilter(frc::LinearFilter::MovingAverage(15)),
-      m_canErrorAlert("CAN errors detected, robot may not be controllable.", frc::Alert::AlertType::kError),
-      m_lowBatteryAlert("Battery voltage is very low, consider turning off the robot or replacing the battery.", frc::Alert::AlertType::kWarning) {
+Robot::Robot() {}
+
+/**
+ * This function is called every 20 ms, no matter the mode. Use
+ * this for items like diagnostics that you want to run during disabled,
+ * autonomous, teleoperated and test.
+ *
+ * <p> This runs after the mode specific periodic functions, but before
+ * LiveWindow and SmartDashboard integrated updating.
+ */
+void Robot::RobotPeriodic()
+{
+  frc2::CommandScheduler::GetInstance().Run();
 }
 
-void Robot::RobotInit() {
-    if (Constants::GetMode() == Constants::Mode::REAL) {
-        std::system("sudo mount /dev/sda1 /media/sda1");
-    }
+/**
+ * This function is called once each time the robot enters Disabled mode. You
+ * can use it to reset any subsystem information you want to clear when the
+ * robot is disabled.
+ */
+void Robot::DisabledInit() {}
 
-    m_state = RobotState::GetInstance();
+void Robot::DisabledPeriodic() {}
 
-    // TODO: Add logging setup when AdvantageKit C++ is available
-}
+/**
+ * This autonomous runs the autonomous command selected by your {@link
+ * RobotContainer} class.
+ */
+void Robot::AutonomousInit()
+{
+  // m_autonomousCommand = m_container.GetAutonomousCommand();
 
-void Robot::RobotPeriodic() {
-    frc2::CommandScheduler::GetInstance().Run();
-    m_state->UpdateLEDState();
-}
-
-void Robot::DisabledInit() {
-    m_disabledTimer.Restart();
-}
-
-void Robot::DisabledPeriodic() {
-    double voltage = frc::RobotController::GetBatteryVoltage();
-    if (voltage < kLowBatteryVoltage) {
-        m_lowBatteryCycleCount++;
-        if (m_disabledTimer.Get() > kLowBatteryDisabledTime &&
-            m_lowBatteryCycleCount >= kLowBatteryMinCycleCount) {
-            m_lowBatteryAlert.Set(true);
-        }
-    } else {
-        m_lowBatteryCycleCount = 0;
-        m_lowBatteryAlert.Set(false);
-    }
-}
-
-void Robot::AutonomousInit() {
-    if (m_robotContainer) {
-        m_autonomousCommand = m_robotContainer->GetAutonomousCommand();
-        if (m_autonomousCommand) {
-            m_autonomousCommand->Schedule();
-        }
-    }
+  // if (m_autonomousCommand) {
+  //   frc2::CommandScheduler::GetInstance().Schedule(m_autonomousCommand.value());
+  // }
 }
 
 void Robot::AutonomousPeriodic() {}
 
-void Robot::TeleopInit() {
-    if (m_autonomousCommand) {
-        m_autonomousCommand->Cancel();
-    }
+void Robot::TeleopInit()
+{
+  // This makes sure that the autonomous stops running when
+  // teleop starts running. If you want the autonomous to
+  // continue until interrupted by another command, remove
+  // this line or comment it out.
+  if (m_autonomousCommand)
+  {
+    m_autonomousCommand->Cancel();
+  }
 }
 
+/**
+ * This function is called periodically during operator control.
+ */
 void Robot::TeleopPeriodic() {}
 
+/**
+ * This function is called periodically during test mode.
+ */
+void Robot::TestPeriodic() {}
+
+/**
+ * This function is called once when the robot is first started up.
+ */
+void Robot::SimulationInit() {}
+
+/**
+ * This function is called periodically whilst in simulation.
+ */
 void Robot::SimulationPeriodic() {}
+
+#ifndef RUNNING_FRC_TESTS
+int main()
+{
+  return frc::StartRobot<Robot>();
+}
+#endif

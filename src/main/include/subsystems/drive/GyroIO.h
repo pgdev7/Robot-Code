@@ -1,15 +1,13 @@
 #pragma once
 
-#include <frc/geometry/Rotation2d.h>
+#include <concepts>
+#include <type_traits>
 
-struct GyroInputs {
+struct GyroIOInputs {
     bool connected = false;
-    frc::Rotation2d yawPosition{0};
-    units::radians_per_second_t yawVelocity{0};
 };
 
-class GyroIO {
-public:
-    virtual ~GyroIO() = default;
-    virtual void UpdateInputs(GyroInputs& inputs) = 0;
+template <typename T>
+concept GyroIO = requires (T t) {
+    std::is_void_v<decltype(t.updateInputs(GyroIOInputs{}))>;
 };

@@ -1,23 +1,36 @@
 #pragma once
 
-#include <frc/geometry/Rotation2d.h>
-#include <units/angle.h>
-#include <units/angular_velocity.h>
-#include <units/voltage.h>
+#include <concepts>
+#include <type_traits>
 
-struct ModuleState {
-    units::radian_t position{0};
-    units::radians_per_second_t velocity{0};
-    units::volt_t appliedVolts{0};
-    units::ampere_t current{0};
-    units::radian_t absolutePosition{0};
+#include <frc/geometry/Rotation2d.h>
+#include <units/angular_velocity.h>
+
+struct ModuleIOInputs {
+    bool driveConnected = false;
+     double drivePositionRad = 0.0;
+     double driveVelocityRadPerSec = 0.0;
+     double driveAppliedVolts = 0.0;
+     double driveCurrentAmps = 0.0;
+
+     bool turnConnected = false;
+     frc::Rotation2d turnPosition{};
+     double turnVelocityRadPerSec = 0.0;
+     double turnAppliedVolts = 0.0;
+     double turnCurrentAmps = 0.0;
+
+     double turnPositionAbsolute = 0.0;
+
+     double *odometryTimestamps = nullptr;
+     double *odometryDrivePositionsRad = nullptr;
+     frc::Rotation2d *odometryTurnPositions = nullptr;
 };
 
-class ModuleIO {
-public:
-    virtual ~ModuleIO() = default;
-    virtual void UpdateInputs(ModuleState& inputs) = 0;
-    virtual void SetOpenLoop(units::volt_t output) = 0;
-    virtual void SetVelocity(units::radians_per_second_t velocity) = 0;
-    virtual void Stop() = 0;
+template <typename T>
+concept ModuleIO = requires (T t) {
+    std::is_void_v<decltype(t.updateInputs(std::declval<ModuleIOInputs>()))>;
+    std::is_void_v<decltype(t.setDriveOpenLoop(std::declval<double>()))>;
+    std::is_void_v<decltype(t.setTurnOpenLoop(std::declval<double>()))>;
+    std::is_void_v<decltype(t.setDriveVelocity(std::declval<units::angular_velocity::radians_per_second_t>()))>;
+    std::is_void_v<decltype(t.setTurnPosition(std::declval<frc::Rotation2d>()))>;
 };

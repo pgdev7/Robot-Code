@@ -1,44 +1,34 @@
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
+
 #pragma once
 
+#include <optional>
+
 #include <frc/TimedRobot.h>
-#include <frc2/command/Command.h>
+#include <frc2/command/CommandPtr.h>
+
 #include "RobotContainer.h"
-#include "RobotState.h"
-#include <memory>
-#include <frc/filter/LinearFilter.h>
-#include <frc/Timer.h>
-#include <frc/Alert.h>
 
 class Robot : public frc::TimedRobot {
-public:
-    Robot();
-    void RobotInit() override;
-    void RobotPeriodic() override;
-    void DisabledInit() override;
-    void DisabledPeriodic() override;
-    void AutonomousInit() override;
-    void AutonomousPeriodic() override;
-    void TeleopInit() override;
-    void TeleopPeriodic() override;
-    void SimulationPeriodic() override;
+ public:
+  Robot();
+  void RobotPeriodic() override;
+  void DisabledInit() override;
+  void DisabledPeriodic() override;
+  void AutonomousInit() override;
+  void AutonomousPeriodic() override;
+  void TeleopInit() override;
+  void TeleopPeriodic() override;
+  void TestPeriodic() override;
+  void SimulationInit() override;
+  void SimulationPeriodic() override;
 
-private:
-    std::unique_ptr<frc2::Command> m_autonomousCommand;
-    std::unique_ptr<RobotContainer> m_robotContainer;
-    RobotState* m_state;
+ private:
+  // Have it empty by default so that if testing teleop it
+  // doesn't have undefined behavior and potentially crash.
+  std::optional<frc2::CommandPtr> m_autonomousCommand;
 
-    frc::LinearFilter m_batteryFilter;
-    frc::Timer m_canInitialErrorTimer;
-    frc::Timer m_canErrorTimer;
-    frc::Timer m_disabledTimer;
-
-    frc::Alert m_canErrorAlert;
-    frc::Alert m_lowBatteryAlert;
-
-    static constexpr double kLoopOverrunWarningTimeout = 0.2;
-    static constexpr double kCanErrorTimeThreshold = 0.5;
-    static constexpr double kLowBatteryVoltage = 11.8;
-    static constexpr double kLowBatteryDisabledTime = 1.5;
-    static constexpr int kLowBatteryMinCycleCount = 10;
-    static inline int m_lowBatteryCycleCount = 0;
+  RobotContainer m_container;
 };
