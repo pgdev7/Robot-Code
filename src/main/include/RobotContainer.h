@@ -1,41 +1,36 @@
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
+
 #pragma once
 
-#include <frc2/command/Command.h>
 #include <frc2/command/CommandPtr.h>
 #include <frc2/command/button/CommandXboxController.h>
-#include <memory>
-#include "subsystems/drive/Drive.h"
-#include "subsystems/intake/Intake.h"
-#include "subsystems/shooter/Shooter.h"
-#include "subsystems/indexer/Indexer.h"
-#include "subsystems/magicCarpet/MagicCarpet.h"
-#include "subsystems/leds/Leds.h"
-#include "Orchestrator.h"
 
-class RobotContainer {
+#include "Constants.h"
+// #include "subsystems/ExampleSubsystem.h"
+
+/**
+ * This class is where the bulk of the robot should be declared.  Since
+ * Command-based is a "declarative" paradigm, very little robot logic should
+ * actually be handled in the {@link Robot} periodic methods (other than the
+ * scheduler calls).  Instead, the structure of the robot (including subsystems,
+ * commands, and trigger mappings) should be declared here.
+ */
+class RobotContainer
+{
 public:
-    RobotContainer();
+  RobotContainer();
 
-    frc2::CommandPtr GetAutonomousCommand();
-    void RobotPeriodic();
+  // frc2::CommandPtr GetAutonomousCommand();
 
 private:
-    void ConfigureButtonBindings();
+  // Replace with CommandPS4Controller or CommandJoystick if needed
+  // frc2::CommandXboxController m_driverController{
+  //     OperatorConstants::kDriverControllerPort};
 
-    // Subsystems
-    std::unique_ptr<Drive> m_drive;
-    std::unique_ptr<Vision> m_vision;
-    std::unique_ptr<Leds> m_leds;
-    std::unique_ptr<MagicCarpet> m_magicCarpet;
-    std::unique_ptr<Indexer> m_indexer;
-    std::unique_ptr<Shooter> m_shooter;
-    std::unique_ptr<Intake> m_intake;
-    std::unique_ptr<IntakeRollers> m_intakeRollers;
-    std::unique_ptr<IntakeExtend> m_intakeExtend;
+  // The robot's subsystems are defined here...
+  // ExampleSubsystem m_subsystem;
 
-    std::unique_ptr<Orchestrator> m_orchestrator;
-
-    // Controllers
-    frc2::CommandXboxController m_driverController{0};
-    frc2::CommandXboxController m_operatorController{1};
+  void ConfigureBindings();
 };

@@ -1,13 +1,27 @@
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
+
 #pragma once
 
-#include <string>
-#include <map>
-#include <frc/DriverStation.h>
+/**
+ * The Constants header provides a convenient place for teams to hold robot-wide
+ * numerical or boolean constants.  This should not be used for any other
+ * purpose.
+ *
+ * It is generally a good idea to place constants into subsystem- or
+ * command-specific namespaces within this header, which can then be used where
+ * they are needed.
+ */
+
 #include <frc/RobotBase.h>
+#include <unordered_map>
+#include <string>
+#include <initializer_list>
 
-namespace Constants {
-
-enum class RobotType {
+enum class RobotType
+{
+    None,
     ROBOT_2025_COMP,
     ROBOT_2025_TEST,
     ROBOT_BRIEFCASE,
@@ -15,48 +29,31 @@ enum class RobotType {
     ROBOT_SIMBOT
 };
 
-enum class Mode {
+enum class Mode
+{
     REAL,
     REPLAY,
     SIM
 };
 
-inline RobotType GetRobot() {
-    static RobotType cachedRobotType = RobotType::ROBOT_2026_COMP;
+namespace Constants
+{
 
-    if (frc::RobotBase::IsReal()) {
-        if (cachedRobotType == RobotType::ROBOT_SIMBOT) {
-            frc::DriverStation::ReportWarning("Invalid robot selected, using competition robot as default.");
-            return RobotType::ROBOT_2026_COMP;
-        }
-        return cachedRobotType;
-    }
-    return cachedRobotType;
-}
+    inline constexpr bool tuningMode = false;
 
-inline Mode GetMode() {
-    switch (GetRobot()) {
-        case RobotType::ROBOT_BRIEFCASE:
-        case RobotType::ROBOT_2025_COMP:
-        case RobotType::ROBOT_2026_COMP:
-            return frc::RobotBase::IsReal() ? Mode::REAL : Mode::REPLAY;
-        case RobotType::ROBOT_SIMBOT:
-            return Mode::SIM;
-        default:
-            return Mode::REAL;
-    }
-}
+    inline const std::unordered_map<RobotType, std::string> logFolders = {
+        {RobotType::ROBOT_BRIEFCASE, "/media/sda1"},
+        {RobotType::ROBOT_2026_COMP, "/media/sda1"},
+        {RobotType::ROBOT_2025_COMP, "/media/sda1"}};
 
-inline const std::map<RobotType, std::string> logFolders = {
-    {RobotType::ROBOT_BRIEFCASE, "/media/sda1"},
-    {RobotType::ROBOT_2026_COMP, "/media/sda1"},
-    {RobotType::ROBOT_2025_COMP, "/media/sda1"}
-};
+    inline bool HALDisabled = false;
 
-inline bool disableHAL = false;
+    RobotType getRobot();
 
-inline void DisableHAL() {
-    disableHAL = true;
-}
+    Mode getMode();
+
+    void disableHAL();
+
+    void main(std::initializer_list<std::string> args);
 
 } // namespace Constants

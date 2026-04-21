@@ -1,8 +1,8 @@
 {
   "fileName": "photonlib.json",
   "name": "photonlib",
-  "version": "v2026.3.4",
-  "uuid": "515fe07e-bfc6-11e8-80c7-7a0cfb0ea0e0",
+  "version": "v2025.3.1",
+  "uuid": "515fe07e-bfc6-11fa-b3de-0242ac130004",
   "frcYear": "2026",
   "mavenUrls": [
     "https://maven.photonvision.org/repository/internal",
@@ -13,7 +13,7 @@
     {
       "groupId": "org.photonvision",
       "artifactId": "photontargeting-cpp",
-      "version": "v2026.3.4",
+      "version": "v2026.1.1-rc-2",
       "skipInvalidPlatforms": true,
       "isJar": false,
       "validPlatforms": [
@@ -28,10 +28,24 @@
     {
       "groupId": "org.photonvision",
       "artifactId": "photonlib-cpp",
-      "version": "v2026.3.4",
+      "version": "v2026.1.1-rc-2",
       "libName": "photonlib",
       "headerClassifier": "headers",
-      "sourcesClassifier": "sources",
+      "sharedLibrary": true,
+      "skipInvalidPlatforms": true,
+      "binaryPlatforms": [
+        "windowsx86-64",
+        "linuxathena",
+        "linuxx86-64",
+        "osxuniversal"
+      ]
+    },
+    {
+      "groupId": "org.photonvision",
+      "artifactId": "photontargeting-cpp",
+      "version": "v2026.1.1-rc-2",
+      "libName": "photontargeting",
+      "headerClassifier": "headers",
       "sharedLibrary": true,
       "skipInvalidPlatforms": true,
       "binaryPlatforms": [
@@ -46,7 +60,12 @@
     {
       "groupId": "org.photonvision",
       "artifactId": "photonlib-java",
-      "version": "v2026.3.4"
+      "version": "v2026.1.1-rc-2"
+    },
+    {
+      "groupId": "org.photonvision",
+      "artifactId": "photontargeting-java",
+      "version": "v2026.1.1-rc-2"
     }
   ]
 }

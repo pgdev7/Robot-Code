@@ -1,7 +1,7 @@
 {
   "fileName": "REVLib.json",
   "name": "REVLib",
-  "version": "2026.1.1",
+  "version": "2026.0.1",
   "frcYear": "2026",
   "uuid": "3f48eb8c-50fe-43a6-9cb7-44c86353c4cb",
   "mavenUrls": [
@@ -12,20 +12,52 @@
     {
       "groupId": "com.revrobotics.frc",
       "artifactId": "REVLib-java",
-      "version": "2026.0.0"
+      "version": "2026.0.1"
     }
   ],
   "jniDependencies": [
     {
       "groupId": "com.revrobotics.frc",
       "artifactId": "REVLib-driver",
-      "version": "2026.1.1",
+      "version": "2026.0.1",
       "skipInvalidPlatforms": true,
       "isJar": false,
       "validPlatforms": [
-        "linuxathena",
         "windowsx86-64",
+        "linuxarm64",
         "linuxx86-64",
+        "linuxathena",
+        "linuxarm32",
+        "osxuniversal"
+      ]
+    },
+    {
+      "groupId": "com.revrobotics.frc",
+      "artifactId": "RevLibBackendDriver",
+      "version": "2026.0.1",
+      "skipInvalidPlatforms": true,
+      "isJar": false,
+      "validPlatforms": [
+        "windowsx86-64",
+        "linuxarm64",
+        "linuxx86-64",
+        "linuxathena",
+        "linuxarm32",
+        "osxuniversal"
+      ]
+    },
+    {
+      "groupId": "com.revrobotics.frc",
+      "artifactId": "RevLibWpiBackendDriver",
+      "version": "2026.0.1",
+      "skipInvalidPlatforms": true,
+      "isJar": false,
+      "validPlatforms": [
+        "windowsx86-64",
+        "linuxarm64",
+        "linuxx86-64",
+        "linuxathena",
+        "linuxarm32",
         "osxuniversal"
       ]
     }
@@ -34,32 +66,66 @@
     {
       "groupId": "com.revrobotics.frc",
       "artifactId": "REVLib-cpp",
-      "version": "2026.1.1",
+      "version": "2026.0.1",
       "libName": "REVLib",
       "headerClassifier": "headers",
-      "sourcesClassifier": "sources",
-      "sharedLibrary": true,
+      "sharedLibrary": false,
       "skipInvalidPlatforms": true,
       "binaryPlatforms": [
-        "linuxathena",
         "windowsx86-64",
+        "linuxarm64",
         "linuxx86-64",
+        "linuxathena",
+        "linuxarm32",
         "osxuniversal"
       ]
     },
     {
       "groupId": "com.revrobotics.frc",
       "artifactId": "REVLib-driver",
-      "version": "2026.1.1",
+      "version": "2026.0.1",
       "libName": "REVLibDriver",
       "headerClassifier": "headers",
-      "sourcesClassifier": "sources",
+      "sharedLibrary": false,
+      "skipInvalidPlatforms": true,
+      "binaryPlatforms": [
+        "windowsx86-64",
+        "linuxarm64",
+        "linuxx86-64",
+        "linuxathena",
+        "linuxarm32",
+        "osxuniversal"
+      ]
+    },
+    {
+      "groupId": "com.revrobotics.frc",
+      "artifactId": "RevLibBackendDriver",
+      "version": "2026.0.1",
+      "libName": "BackendDriver",
       "sharedLibrary": true,
       "skipInvalidPlatforms": true,
       "binaryPlatforms": [
-        "linuxathena",
         "windowsx86-64",
+        "linuxarm64",
         "linuxx86-64",
+        "linuxathena",
+        "linuxarm32",
+        "osxuniversal"
+      ]
+    },
+    {
+      "groupId": "com.revrobotics.frc",
+      "artifactId": "RevLibWpiBackendDriver",
+      "version": "2026.0.1",
+      "libName": "REVLibWpi",
+      "sharedLibrary": true,
+      "skipInvalidPlatforms": true,
+      "binaryPlatforms": [
+        "windowsx86-64",
+        "linuxarm64",
+        "linuxx86-64",
+        "linuxathena",
+        "linuxarm32",
         "osxuniversal"
       ]
     }

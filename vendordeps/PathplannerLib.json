@@ -2,7 +2,7 @@
   "fileName": "PathplannerLib.json",
   "name": "PathplannerLib",
   "version": "2026.1.2",
-  "uuid": "1b42324f-5700-451a-89c7-7f58d726f7f9",
+  "uuid": "1b42324f-17c6-4875-8e77-1c312bc8c786",
   "frcYear": "2026",
   "mavenUrls": [
     "https://3015rangerrobotics.github.io/pathplannerlib/repo"
@@ -23,14 +23,15 @@
       "version": "2026.1.2",
       "libName": "PathplannerLib",
       "headerClassifier": "headers",
-      "sourcesClassifier": "sources",
-      "sharedLibrary": true,
+      "sharedLibrary": false,
       "skipInvalidPlatforms": true,
       "binaryPlatforms": [
-        "linuxathena",
         "windowsx86-64",
         "linuxx86-64",
-        "osxuniversal"
+        "osxuniversal",
+        "linuxathena",
+        "linuxarm32",
+        "linuxarm64"
       ]
     }
   ]
