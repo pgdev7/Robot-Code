@@ -9,6 +9,8 @@
 
 class ModuleIOSim {
 public:
+  ModuleIOSim();
+
   void updateInputs(ModuleIOInputs &inputs);
   void setDriveOpenLoop(units::volt_t output);
   void setTurnOpenLoop(units::volt_t output);
@@ -16,15 +18,20 @@ public:
   void setTurnPosition(frc::Rotation2d rotation);
 
 private:
-  const frc::sim::DCMotorSim driveSim;
-  const frc::sim::DCMotorSim turnSim;
+  frc::sim::DCMotorSim driveSim;
+  frc::sim::DCMotorSim turnSim;
+
   bool driveClosedLoop = false;
   bool turnClosedLoop = false;
+
   frc::PIDController driveController{DriveConstants::driveSimP, 0,
                                      DriveConstants::driveSimD};
   frc::PIDController turnController{DriveConstants::turnSimP, 0,
                                     DriveConstants::turnSimD};
-  double driveFFVolts = 0.0;
-  double driveAppliedVolts = 0.0;
-  double turnAppliedVolts = 0.0;
+
+  units::volt_t driveFF{0.0};
+  units::volt_t driveAppliedVolts{0.0};
+  units::volt_t turnAppliedVolts{0.0};
 };
+
+static_assert(ModuleIO<ModuleIOSim>, "ModuleIOSim does not satisfy ModuleIO");

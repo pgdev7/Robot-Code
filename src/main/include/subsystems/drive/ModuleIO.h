@@ -1,6 +1,5 @@
 #pragma once
 
-#include "units/current.h"
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -8,6 +7,7 @@
 #include <frc/geometry/Rotation2d.h>
 #include <units/angle.h>
 #include <units/angular_velocity.h>
+#include <units/current.h>
 #include <units/charge.h>
 #include <units/voltage.h>
 

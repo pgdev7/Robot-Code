@@ -1,38 +1,37 @@
-#include "subsystems/drive/ModuleIOSpark.h"
+#include "subsystems/drive/ModuleIOTalonSpark.h"
+#include "Schematic.h"
 #include "ctre/phoenix6/CANcoder.hpp"
 #include "ctre/phoenix6/StatusSignal.hpp"
+#include "ctre/phoenix6/TalonFX.hpp"
+#include "ctre/phoenix6/configs/Slot0Configs.hpp"
 #include "ctre/phoenix6/core/CoreCANcoder.hpp"
+#include "ctre/phoenix6/core/CoreTalonFX.hpp"
 #include "ctre/phoenix6/signals/SpnEnums.hpp"
+#include "ctre/phoenix6/swerve/SwerveModuleConstants.hpp"
+#include "frc/MathUtil.h"
 #include "frc/geometry/Rotation2d.h"
 #include "rev/ClosedLoopTypes.h"
 #include "rev/ConfigureTypes.h"
+#include "rev/SparkLowLevel.h"
+#include "rev/SparkMax.h"
 #include "rev/config/ClosedLoopConfig.h"
 #include "rev/config/EncoderConfig.h"
 #include "rev/config/SignalsConfig.h"
+#include "rev/config/SparkBaseConfig.h"
 #include "subsystems/drive/DriveConstants.h"
 #include "subsystems/drive/ModuleIO.h"
 #include "subsystems/drive/OdometryThread.h"
-
-#include <rev/REVLibError.h>
-#include <rev/SparkBase.h>
-#include <rev/SparkLowLevel.h>
-#include <rev/SparkMax.h>
-#include <rev/SparkRelativeEncoder.h>
-
-#include "Schematic.h"
+#include "units/angle.h"
 #include "units/angular_velocity.h"
 #include "units/current.h"
 #include "units/frequency.h"
 #include "units/voltage.h"
+#include "util/PhoenixUtil.h"
 #include "util/SparkUtil.h"
-#include <units/angle.h>
-
-#include "util/Math.h"
-#include <frc/MathUtil.h>
 #include <utility>
 #include <vector>
 
-template <int module> ModuleIOSpark<module>::ModuleIOSpark() {
+template <int module> ModuleIOTalonSpark<module>::ModuleIOTalonSpark() {
   switch (module) {
   case 0: {
     data->zeroRotation = DriveConstants::frontLeftZeroRotation;
@@ -52,29 +51,28 @@ template <int module> ModuleIOSpark<module>::ModuleIOSpark() {
   }
   };
 
-  int driveSparkCanId = 0;
+  int driveTalonCanId = 0;
   switch (module) {
   case 0: {
-    driveSparkCanId = Schematic.frontLeftDriveCanId;
+    driveTalonCanId = Schematic.frontLeftDriveCanId;
     break;
   }
   case 1: {
-    driveSparkCanId = Schematic.frontRightDriveCanId;
+    driveTalonCanId = Schematic.frontRightDriveCanId;
     break;
   }
   case 2: {
-    driveSparkCanId = Schematic.backLeftDriveCanId;
+    driveTalonCanId = Schematic.backLeftDriveCanId;
     break;
   }
   case 3: {
-    driveSparkCanId = Schematic.backRightDriveCanId;
+    driveTalonCanId = Schematic.backRightDriveCanId;
     break;
   }
   }
 
-  data->driveSpark = std::move(rev::spark::SparkMax(
-      driveSparkCanId, rev::spark::SparkLowLevel::MotorType::kBrushless));
-  data->driveEncoder = data->driveSpark.GetEncoder();
+  data->driveTalon =
+      std::move(ctre::phoenix6::hardware::TalonFX(driveTalonCanId));
 
   int turnSparkCanId = 0;
   switch (module) {
@@ -123,42 +121,38 @@ template <int module> ModuleIOSpark<module>::ModuleIOSpark() {
   data->turnEncoderAbsolute =
       std::move(ctre::phoenix6::hardware::CANcoder(turnAbsoluteEncoderCanId));
 
-  data->driveController = data->driveSpark.GetClosedLoopController();
   data->turnController = data->turnSpark.GetClosedLoopController();
 
-  auto driveConfig =
-      rev::spark::SparkBaseConfig()
-          .SetIdleMode(rev::spark::SparkBaseConfig::IdleMode::kBrake)
-          .SmartCurrentLimit(DriveConstants::driveMotorCurrentLimit.value())
-          .VoltageCompensation(12.0)
-          .Apply(rev::spark::EncoderConfig()
-                     .PositionConversionFactor(
-                         DriveConstants::driveEncoderPositionFactor)
-                     .VelocityConversionFactor(
-                         DriveConstants::driveEncoderVelocityFactor)
-                     .UvwMeasurementPeriod(10)
-                     .UvwAverageDepth(2))
-          .Apply(rev::spark::ClosedLoopConfig()
-                     .SetFeedbackSensor(
-                         rev::spark::FeedbackSensor::kPrimaryEncoder)
-                     .Pidf(DriveConstants::driveKp, 0.0,
-                           DriveConstants::driveKd, 0.0))
-          .Apply(rev::spark::SignalsConfig()
-                     .PrimaryEncoderPositionAlwaysOn(true)
-                     .PrimaryEncoderPositionPeriodMs(static_cast<int>(
-                         1000 / DriveConstants::odometryFrequency))
-                     .PrimaryEncoderVelocityAlwaysOn(true)
-                     .PrimaryEncoderVelocityPeriodMs(20)
-                     .AppliedOutputPeriodMs(20)
-                     .BusVoltagePeriodMs(20)
-                     .OutputCurrentPeriodMs(20));
+  ctre::phoenix6::configs::TalonFXConfiguration driveConfig;
+  driveConfig.MotorOutput.NeutralMode =
+      ctre::phoenix6::signals::NeutralModeValue::Brake;
+  driveConfig.Feedback.SensorToMechanismRatio =
+      DriveConstants::driveMotorReduction;
+  driveConfig.TorqueCurrent.PeakForwardTorqueCurrent =
+      DriveConstants::driveMotorCurrentLimit;
+  driveConfig.TorqueCurrent.PeakReverseTorqueCurrent =
+      -DriveConstants::driveMotorCurrentLimit;
+  driveConfig.CurrentLimits.StatorCurrentLimit =
+      DriveConstants::driveMotorCurrentLimit;
+  driveConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+  driveConfig.MotorOutput.Inverted =
+      ctre::phoenix6::signals::InvertedValue::CounterClockwise_Positive;
 
-  tryUntilOk(5, [&, this]() {
-    return data->driveSpark.Configure(driveConfig,
-                                      rev::ResetMode::kResetSafeParameters,
-                                      rev::PersistMode::kPersistParameters);
+  ctre::phoenix6::configs::Slot0Configs slot0config;
+  slot0config.kP = DriveConstants::driveKp;
+  slot0config.kI = 0;
+  slot0config.kD = DriveConstants::driveKd;
+  slot0config.kS = DriveConstants::driveKs;
+  slot0config.kV = DriveConstants::driveKv;
+  slot0config.kA = DriveConstants::driveKa;
+  slot0config.StaticFeedforwardSign =
+      ctre::phoenix6::signals::StaticFeedforwardSignValue::UseClosedLoopSign;
+  driveConfig.WithSlot0(slot0config);
+  PhoenixUtil::tryUntilOk(5, [&, this]() {
+    return data->driveTalon.getConfigurator().apply(driveConfig, 0.25);
   });
-  tryUntilOk(5, [this]() { return data->driveEncoder.SetPosition(0.0); });
+  PhoenixUtil::tryUntilOk(
+      5, [&, this]() { return data->driveTalon.setPosition(0.0, 0.25); });
 
   auto turnConfig =
       rev::spark::SparkBaseConfig()
@@ -206,7 +200,6 @@ template <int module> ModuleIOSpark<module>::ModuleIOSpark() {
           : ctre::phoenix6::signals::SensorDirectionValue::
                 CounterClockwise_Positive;
   data->turnEncoderAbsolute.GetConfigurator().Apply(cancoderConfig);
-  data->turnPositionAbsolute = data->turnEncoderAbsolute.GetPosition();
 
   ctre::phoenix6::BaseStatusSignal::SetUpdateFrequencyForAll(
       units::hertz_t(50.0), data->turnPositionAbsolute);
@@ -215,50 +208,54 @@ template <int module> ModuleIOSpark<module>::ModuleIOSpark() {
 
   // Create odometry queues
   data->timestampQueue = OdometryThread::getInstance()->makeTimestampQueue();
-  data->drivePositionQueue = OdometryThread::getInstance()->registerSignal(
-      &data->driveSpark,
-      [holder]() { return holder->driveEncoder.GetPosition(); });
+
+  // Create turn status signals
   data->turnPositionQueue = OdometryThread::getInstance()->registerSignal(
       &data->turnSpark,
       [holder]() { return holder->turnEncoder.GetPosition(); });
+  data->turnPositionAbsolute = data->turnEncoderAbsolute.GetPosition();
 
+  // Initialize turn relative encoder
   tryUntilOk(5, [this]() {
     return data->turnEncoder.SetPosition(
         units::radian_t(data->turnEncoderAbsolute.GetAbsolutePosition()));
   });
+
+  // Create drive status signals
+  data->drivePosition = data->driveTalon.GetPosition();
+  data->drivePositionQueue = OdometryThread::getInstance()->registerSignal(
+      [holder]() { return holder->driveTalon.GetPosition(); });
+  data->driveVelocity = data->driveTalon.GetVelocity();
+  data->driveAppliedVolts = data->driveTalon.GetMotorVoltage();
+  data->driveCurrent = data->driveTalon.GetStatorCurrent();
+
+  // Configure periodic frames
+  ctre::phoenix6::BaseStatusSignal::SetUpdateFrequencyForAll(
+      DriveConstants::odometryFrequency, data->drivePosition);
+  ctre::phoenix6::BaseStatusSignal::SetUpdateFrequencyForAll(
+      50.0, data->driveVelocity, data->driveAppliedVolts, data->driveCurrent,
+      data->turnPositionAbsolute);
+  ctre::phoenix6::hardware::ParentDevice::OptimizeBusUtilizationForAll(
+      data->driveTalon, data->turnEncoderAbsolute);
 }
 
 template <int module>
-void ModuleIOSpark<module>::updateInputs(ModuleIOInputs &inputs) {
+void ModuleIOTalonSpark<module>::updateInputs(ModuleIOInputs &inputs) {
+  // Refresh all signals
+  auto driveStatus = ctre::phoenix6::BaseStatusSignal::RefreshAll(
+      data->drivePosition, data->driveVelocity, data->driveAppliedVolts,
+      data->driveCurrent);
   ctre::phoenix6::BaseStatusSignal::RefreshAll(data->turnPositionAbsolute);
   inputs.turnPositionAbsolute =
       units::radian_t(data->turnPositionAbsolute.GetValue());
 
   // Update drive inputs
-  sparkStickyFault = false;
-  ifOk(
-      data->driveSpark, [this]() { return data->driveEncoder.GetPosition(); },
-      [&](double value) { inputs.drivePosition = units::radian_t(value); });
-  ifOk(
-      data->driveSpark, [this]() { return data->driveEncoder.GetVelocity(); },
-      [&](double value) {
-        inputs.driveVelocity = units::radians_per_second_t(value);
-      });
-  ifOk(
-      data->driveSpark,
-      [this]() {
-        return std::vector<double>{data->driveSpark.GetAppliedOutput(),
-                                   data->driveSpark.GetBusVoltage()};
-      },
-      [&](std::vector<double> values) {
-        inputs.driveAppliedVoltage = units::volt_t(values[0] * values[1]);
-      });
-  ifOk(
-      data->driveSpark,
-      [this]() { return data->driveSpark.GetOutputCurrent(); },
-      [&](double value) { inputs.driveCurrent = units::ampere_t(value); });
   inputs.driveConnected =
-      data->driveConnectedDebounce.Calculate(!sparkStickyFault);
+      data->driveConnectedDebounce.calculate(driveStatus.isOK());
+  inputs.drivePosition = data->drivePosition;
+  inputs.driveVelocity = data->driveVelocity;
+  inputs.driveAppliedVoltage = data->driveAppliedVoltage;
+  inputs.driveCurrent = data->driveCurrent;
 
   // Update turn inputs
   sparkStickyFault = false;
@@ -303,28 +300,41 @@ void ModuleIOSpark<module>::updateInputs(ModuleIOInputs &inputs) {
 }
 
 template <int module>
-void ModuleIOSpark<module>::setDriveOpenLoop(units::volt_t output) {
-  data->driveSpark.SetVoltage(output());
+void ModuleIOTalonSpark<module>::setDriveOpenLoop(units::volt_t output) {
+  switch (DriveConstants::driveClosedLoopOutput) {
+  case ctre::phoenix6::swerve::ClosedLoopOutputType::Voltage: {
+    data->voltageRequest.WithOutput(output);
+    break;
+  }
+  case ctre::phoenix6::swerve::ClosedLoopOutputType::TorqueCurrentFOC: {
+    data->torqueCurrentRequest.WithOutput(output);
+    break;
+  }
+  }
 }
 
 template <int module>
-void ModuleIOSpark<module>::setTurnOpenLoop(units::volt_t output) {
+void ModuleIOTalonSpark<module>::setTurnOpenLoop(units::volt_t output) {
   data->turnSpark.SetVoltage(output());
 }
 
 template <int module>
-void ModuleIOSpark<module>::setDriveVelocity(
-    units::angular_velocity::radians_per_second_t velocity) {
-  double ffVolts = DriveConstants::driveKs * sgn(velocity()) +
-                   DriveConstants::driveKv * velocity();
-  data->driveController.SetReference(
-      velocity(), rev::spark::SparkBase::ControlType::kVelocity,
-      rev::spark::ClosedLoopSlot::kSlot0, ffVolts,
-      rev::spark::SparkClosedLoopController::ArbFFUnits::kVoltage);
+void ModuleIOTalonSpark<module>::setDriveVelocity(
+    units::radians_per_second_t velocity) {
+  switch (DriveConstants::driveClosedLoopOutput) {
+  case ctre::phoenix6::swerve::ClosedLoopOutputType::Voltage: {
+    data->velocityVoltageRequest.WithVelocity(velocity);
+    break;
+  }
+  case ctre::phoenix6::swerve::ClosedLoopOutputType::TorqueCurrentFOC: {
+    data->velocityTorqueCurrentRequest.WithVelocity(velocity);
+    break;
+  }
+  }
 }
 
 template <int module>
-void ModuleIOSpark<module>::setTurnPosition(frc::Rotation2d rotation) {
+void ModuleIOTalonSpark<module>::setTurnPosition(frc::Rotation2d rotation) {
   double setpoint = frc::InputModulus((rotation + data->zeroRotation).Radians(),
                                       DriveConstants::turnPIDMinInput,
                                       DriveConstants::turnPIDMaxInput);
